@@ -1,0 +1,84 @@
+import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+# ---------------------------
+# 1. DATA LOADING
+# ---------------------------
+# For simplicity, we define a small dataset inline.
+# You can replace this with code to load a CSV file.
+data = [
+    {
+        "title": "Space Adventure",
+        "description": "An action-packed journey through space with thrilling battles and heroic feats."
+    },
+    {
+        "title": "Galactic Comedy",
+        "description": "A hilarious romp through the galaxy that mixes space adventure with witty humor."
+    },
+    {
+        "title": "Deep Space Mysteries",
+        "description": "Exploring unknown planets and cosmic phenomena in a dramatic tale set in space."
+    },
+    {
+        "title": "Comedy in Orbit",
+        "description": "A funny story set in space, combining humorous antics with sci-fi elements."
+    },
+    {
+        "title": "Interstellar Wars",
+        "description": "Epic battles and daring missions as star fleets clash in the depths of the universe."
+    }
+]
+
+df = pd.DataFrame(data)
+
+# ---------------------------
+# 2. BUILDING THE TF-IDF VECTORS
+# ---------------------------
+# Initialize a TF-IDF vectorizer to convert movie descriptions into vectors.
+vectorizer = TfidfVectorizer(stop_words="english")
+tfidf_matrix = vectorizer.fit_transform(df["description"])
+
+# ---------------------------
+# 3. SIMILARITY COMPUTATION & RECOMMENDATION FUNCTION
+# ---------------------------
+def recommend_movies(query, top_n=5):
+    """
+    Recommend movies based on a user query.
+    
+    Parameters:
+        query (str): A short description of the user's preferences.
+        top_n (int): The number of top recommendations to return.
+        
+    Returns:
+        list of tuples: Each tuple contains (movie title, similarity score).
+    """
+    # Transform the user query using the same vectorizer
+    query_vector = vectorizer.transform([query])
+    
+    # Compute cosine similarity between the query and all movie descriptions
+    similarities = cosine_similarity(query_vector, tfidf_matrix).flatten()
+    
+    # Get the indices of the top_n most similar movies (sorted in descending order)
+    top_indices = similarities.argsort()[-top_n:][::-1]
+    
+    recommendations = []
+    for idx in top_indices:
+        title = df.iloc[idx]["title"]
+        score = similarities[idx]
+        recommendations.append((title, score))
+    return recommendations
+
+# ---------------------------
+# 4. MAIN EXECUTION (EXAMPLE USAGE)
+# ---------------------------
+if __name__ == "__main__":
+    # Example user input description
+    user_query = "I love thrilling action movies set in space, with a comedic twist."
+    
+    # Get the top 5 recommendations
+    results = recommend_movies(user_query, top_n=5)
+    
+    print("Recommended Movies:")
+    for title, score in results:
+        print(f"- {title} (Similarity Score: {score:.2f})")
